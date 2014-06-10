@@ -285,6 +285,11 @@ public class ExtendedEmailPublisher extends Notifier implements MatrixAggregatab
             debug(context.getListener().getLogger(), "Successfully created MimeMessage");
             Address[] allRecipients = msg.getAllRecipients();
             int retries = 0;
+            int maxRetries = getDescriptor().getNumSendRetries();
+            int msBetweenRetries = getDescriptor().getMsBetweenRetries();
+            int secBetweenRetries = getDescriptor().getSecBetweenRetries();
+            String totalTries = (maxRetries > 1) ? "times" : "time";
+            
             if (allRecipients != null) {
                 if (executePresendScript(context, msg)) {
                     // presend script might have modified recipients:
@@ -309,46 +314,56 @@ public class ExtendedEmailPublisher extends Notifier implements MatrixAggregatab
                         try {
                             Transport.send(msg);
                             break;
-                        } catch (SendFailedException e) {
-                            if (e.getNextException() != null
-                                    && ((e.getNextException() instanceof SocketException)
-                                    || (e.getNextException() instanceof ConnectException))) {
-                                context.getListener().getLogger().println("Socket error sending email, retrying once more in 10 seconds...");
-                                Thread.sleep(10000);
-                            } else {
-                                Address[] addresses = e.getValidSentAddresses();
-                                if (addresses != null && addresses.length > 0) {
-                                    buf = new StringBuilder("Successfully sent to the following addresses:");
-                                    for (Address a : addresses) {
-                                        buf.append(' ').append(a);
-                                    }
-                                    context.getListener().getLogger().println(buf);
+                        }  catch (SendFailedException e) {                            
+                            Address[] addresses = e.getValidSentAddresses();
+                            if (addresses != null && addresses.length > 0) {
+                                buf = new StringBuilder("Successfully sent to the following addresses:");
+                                for (Address a : addresses) {
+                                    buf.append(' ').append(a);
                                 }
-                                addresses = e.getValidUnsentAddresses();
-                                if (addresses != null && addresses.length > 0) {
-                                    buf = new StringBuilder("Error sending to the following VALID addresses:");
-                                    for (Address a : addresses) {
-                                        buf.append(' ').append(a);
-                                    }
-                                    context.getListener().getLogger().println(buf);
-                                }
-                                addresses = e.getInvalidAddresses();
-                                if (addresses != null && addresses.length > 0) {
-                                    buf = new StringBuilder("Error sending to the following INVALID addresses:");
-                                    for (Address a : addresses) {
-                                        buf.append(' ').append(a);
-                                    }
-                                    context.getListener().getLogger().println(buf);
-                                }
-
-                                debug(context.getListener().getLogger(), "SendFailedException message: " + e.getMessage());
-                                break;
+                                context.getListener().getLogger().println(buf);
                             }
-                        }
-                        retries++;
-                        if (retries > 1) {
-                            context.getListener().getLogger().println("Failed after second try sending email");
+                            addresses = e.getValidUnsentAddresses();
+                            if (addresses != null && addresses.length > 0) {
+                                buf = new StringBuilder("Error sending to the following VALID addresses:");
+                                for (Address a : addresses) {
+                                    buf.append(' ').append(a);
+                                }
+                                context.getListener().getLogger().println(buf);
+                            }
+                            addresses = e.getInvalidAddresses();
+                            if (addresses != null && addresses.length > 0) {
+                                buf = new StringBuilder("Error sending to the following INVALID addresses:");
+                                for (Address a : addresses) {
+                                    buf.append(' ').append(a);
+                                }
+                                context.getListener().getLogger().println(buf);
+                            }
+
+                            debug(context.getListener().getLogger(), "SendFailedException message: " + e.getMessage());
                             break;
+
+                        } catch (MessagingException e) {
+                        	if (((Exception)e instanceof SocketException) || ((Exception)e instanceof ConnectException)) {
+                        		int remainingTimes = maxRetries - retries;
+                        		String remainingTries = (remainingTimes > 1) ? "times" : "time";
+                        		context.getListener().getLogger().println(
+                    				String.format(
+                						"Socket error sending email, retrying %d more %s in %d seconds...",
+                						remainingTimes, remainingTries, secBetweenRetries)
+            						);
+                                Thread.sleep(msBetweenRetries);
+                                
+                                retries++;
+                                if (retries > maxRetries) {
+                                    context.getListener().getLogger().println(
+                                		String.format(
+                            				"Failed to send email after retrying %d %s.",
+                            				maxRetries, totalTries)
+                        				);
+                                    break;
+                                }
+                        	} 
                         }
                     }
                     if (context.getBuild().getAction(MailMessageIdAction.class) == null) {

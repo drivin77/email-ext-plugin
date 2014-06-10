@@ -77,6 +77,15 @@ f.section(title: _("Extended E-mail Notification")) {
   f.entry(help: "/plugin/email-ext/help/globalConfig/defaultPresendScript.html", title: _("Default Pre-send Script")) {
     f.textarea(class: "setting-input", value: descriptor.defaultPresendScript, name: "ext_mailer_default_presend_script")
   }
+
+  f.entry(help: "/plugin/email-ext/help/globalConfig/numSendRetries.html", title: _("Number of Retries On Server Failure")) {
+    input(type: "text", class: "setting-input", value: descriptor.numSendRetries, name: "ext_mailer_num_send_retries")
+  }
+
+  f.entry(help: "/plugin/email-ext/help/globalConfig/msBetweenRetries.html", title: _("Time Between Retries (in ms)")) {
+    input(type: "text", class: "setting-input", value: descriptor.msBetweenRetries, name: "ext_mailer_ms_between_retries")
+  }
+
   f.optionalBlock(help: "/plugin/email-ext/help/globalConfig/debugMode.html", checked: descriptor.isDebugMode(), name: "ext_mailer_debug_mode", title: _("Enable Debug Mode")) 
   f.optionalBlock(help: "/plugin/email-ext/help/globalConfig/security.html", checked: descriptor.isSecurityEnabled(), name: "ext_mailer_security_enabled", title: _("Enable Security")) 
   

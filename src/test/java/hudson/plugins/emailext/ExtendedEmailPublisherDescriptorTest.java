@@ -88,6 +88,14 @@ public class ExtendedEmailPublisherDescriptorTest {
         HtmlCheckBoxInput securityMode = page.getElementByName("ext_mailer_security_enabled");
         assertNotNull("Security mode should be present", securityMode);
         assertFalse("Security mode should not be checked by default", securityMode.isChecked());
+        
+        HtmlTextInput numSendRetries = page.getElementByName("ext_mailer_num_send_retries");
+        assertNotNull("Number of Send Retries should be present", numSendRetries);
+        assertTrue("number of send retries should be set to a number", ((Integer)Integer.parseInt(numSendRetries.asText())) != null);
+        
+        HtmlTextInput msBetweenRetries = page.getElementByName("ext_mailer_ms_between_retries");
+        assertNotNull("ms between retries should be present", msBetweenRetries);
+        assertTrue("ms between retries should be set to a number", ((Integer)Integer.parseInt(msBetweenRetries.asText())) != null);
     }
     
     @Test

@@ -136,6 +136,17 @@ public final class ExtendedEmailPublisherDescriptor extends BuildStepDescriptor<
      * Enables the "Watch This Job" feature
      */
     private boolean enableWatching;
+    
+    /**
+     * Allow user to control how many retries and time
+     * between retries for Transport.send() failures
+     * due to network issues.
+     */
+    private int numSendRetries = 1;
+
+	private int msBetweenRetries = 10000;
+	
+	private int secBetweenRetries;
 
     @Override
     public String getDisplayName() {
@@ -289,6 +300,18 @@ public final class ExtendedEmailPublisherDescriptor extends BuildStepDescriptor<
     public boolean isWatchingEnabled() {
         return enableWatching;
     }
+    
+    public int getNumSendRetries() {
+		return numSendRetries;
+	}
+
+	public int getMsBetweenRetries() {
+		return msBetweenRetries;
+	}
+	
+	public int getSecBetweenRetries() {
+		return secBetweenRetries;
+	}
 
     public boolean isApplicable(Class<? extends AbstractProject> jobType) {
         return true;
@@ -352,6 +375,12 @@ public final class ExtendedEmailPublisherDescriptor extends BuildStepDescriptor<
         debugMode = req.hasParameter("ext_mailer_debug_mode");
         
         //enableWatching = req.getParameter("ext_mailer_enable_watching") != null;
+        
+        numSendRetries = nullify(req.getParameter("ext_mailer_num_send_retries")) != null ?
+        	(Integer.parseInt(req.getParameter("ext_mailer_num_send_retries"))) : numSendRetries;
+    	msBetweenRetries = nullify(req.getParameter("ext_mailer_ms_between_retries")) != null ?
+        	(Integer.parseInt(req.getParameter("ext_mailer_ms_between_retries"))) : msBetweenRetries;
+        secBetweenRetries = msBetweenRetries / 1000;
 
         // convert the value into megabytes (1024 * 1024 bytes)
         maxAttachmentSize = nullify(req.getParameter("ext_mailer_max_attachment_size")) != null ?
